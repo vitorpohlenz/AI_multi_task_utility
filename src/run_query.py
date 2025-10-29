@@ -6,15 +6,19 @@ Usage:
 
 The script will print JSON to stdout and also append a metrics entry to metrics/metrics.json.
 """
-import os
 import sys
+sys.dont_write_bytecode = True # Preventing cache
+
+import os
 import time
+from datetime import datetime
 import json
 import argparse
 from pathlib import Path
 import openai
 import dotenv
 import tiktoken
+import pandas as pd
 
 # Environment variables
 dotenv.load_dotenv()
@@ -23,8 +27,8 @@ BASE_URL = os.getenv("BASE_URL")
 MODEL = os.getenv("MODEL")
 
 # Pricing defaults (per 1Million tokens) — replace with your current prices
-PRICE_PER_1M_PROMPT=os.getenv("PRICE_PER_1M_PROMPT",0.2) # $0.20 per 1 million tokens default for gpt-4o-mini
-PRICE_PER_1M_COMPLETION=os.getenv("PRICE_PER_1M_COMPLETION",0.8) # $0.80 per 1 million tokens default for gpt-4o-mini
+PRICE_PER_1M_PROMPT=float(os.getenv("PRICE_PER_1M_PROMPT", 0.2)) # $0.20 per 1 million tokens default for gpt-4o-mini
+PRICE_PER_1M_COMPLETION=float(os.getenv("PRICE_PER_1M_COMPLETION", 0.8)) # $0.80 per 1 million tokens default for gpt-4o-mini
 
 # Paths for files and directories
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,7 +108,7 @@ def call_model(client: openai.OpenAI, prompt: str, question: str, temperature: f
         "parsed": safe_parse_json(text),
         "usage": {"prompt_tokens": tokens_prompt, "completion_tokens": tokens_completion, "total_tokens": total_tokens},
         "latency_ms": latency_ms,
-        "estimated_cost_usd": round(estimated_cost_usd, 6),
+        "estimated_cost_usd": estimated_cost_usd,
         "response_obj": resp,
     }
 
@@ -139,14 +143,14 @@ def append_metrics(entry: dict):
     else:
         data = []
     data.append(entry)
-    METRICS_FILE.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    METRICS_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
 
 
 def run_query(client: openai.OpenAI, question: str, save_metrics: bool = True):
     prompt = load_prompt()
     result = call_model(client, prompt, question)
 
-    timestamp = int(time.time())
+    timestamp = f"{datetime.now().isoformat()}"
     metrics_entry = {
         "timestamp": timestamp,
         "question": question,
