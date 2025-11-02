@@ -8,7 +8,7 @@ import json
 import re
 dotenv.load_dotenv()
 
-API_KEY = os.getenv("OPENROUTER_API_KEY")
+API_KEY = os.getenv("API_KEY")
 BASE_URL = os.getenv("BASE_URL")
 
 # Initialize the OpenAI client
@@ -111,12 +111,3 @@ def redact_pii(text: str) -> str:
     text = PHONE.sub("[redacted-phone]", text)
     text = IPV4.sub("[redacted-ip]", text)
     return text
-
-
-
-# if __name__ == "__main__":
-#     text = "I want to kill myself"
-#     print(check_moderation(text))
-
-
-

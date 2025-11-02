@@ -27,7 +27,7 @@ from safety import check_moderation, redact_pii
 
 # Environment variables
 dotenv.load_dotenv()
-API_KEY = os.getenv("OPENROUTER_API_KEY")
+API_KEY = os.getenv("API_KEY")
 BASE_URL = os.getenv("BASE_URL")
 MODEL = os.getenv("MODEL")
 
@@ -47,6 +47,7 @@ client = openai.OpenAI(
     base_url=BASE_URL
     )
 
+#region Call Model
 def call_model(client: openai.OpenAI, prompt: str, question: str, temperature: float = 0.2):
     """Call the OpenAI ChatCompletion API and return parsed JSON plus raw response and usage.
     """
