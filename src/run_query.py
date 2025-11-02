@@ -17,8 +17,10 @@ import argparse
 from pathlib import Path
 import openai
 import dotenv
-import tiktoken
 import pandas as pd
+
+# Functions
+from functions import load_prompt, count_tokens, safe_parse_json, append_metrics
 
 # Safety and moderation
 from safety import check_moderation, redact_pii
@@ -44,24 +46,6 @@ client = openai.OpenAI(
     api_key=API_KEY,
     base_url=BASE_URL
     )
-
-#region Functions
-def load_prompt():
-    """Load the prompt from the prompt file."""
-    return PROMPT_FILE.read_text(encoding="utf-8")
-
-
-def count_tokens(text: str, model: str) -> int:
-    """Estimate tokens for a piece of text.
-    Use tiktoken if available, otherwise fall back to a simple word-based heuristic.
-    """
-
-    try:
-        enc = tiktoken.encoding_for_model(model)
-    except Exception:
-        enc = tiktoken.get_encoding("utf-8")
-    return len(enc.encode(text))
-
 
 def call_model(client: openai.OpenAI, prompt: str, question: str, temperature: float = 0.2):
     """Call the OpenAI ChatCompletion API and return parsed JSON plus raw response and usage.
@@ -131,42 +115,8 @@ def call_model(client: openai.OpenAI, prompt: str, question: str, temperature: f
         "response_obj": resp,
     }
 
-def safe_parse_json(text: str):
-    """Try to parse the assistant's text as JSON. If it fails, attempt to find JSON substring.
-    Returns a dict with keys: ok (bool), json (object or None), error (str or None), text (original)
-    """
-    try:
-        data = json.loads(text)
-        return {"ok": True, "json": data, "error": None}
-    except Exception as e:
-        # attempt to extract first {...} block
-        import re
-        # regex to find the first {..} block in the text
-        match = re.search(r"\{[\s\S]*\}", text)
-        if match:
-            try:
-                data = json.loads(match.group(0))
-                return {"ok": True, "json": data, "error": None}
-            except Exception as e2:
-                return {"ok": False, "json": None, "error": f"json parse error: {e2}. original error: {e}", "text": text}
-        return {"ok": False, "json": None, "error": str(e), "text": text}
-
-
-def append_metrics(entry: dict):
-    # Read existing
-    if METRICS_FILE.exists():
-        try:
-            data = json.loads(METRICS_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            data = []
-    else:
-        data = []
-    data.append(entry)
-    METRICS_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
-
-
 def run_query(client: openai.OpenAI, question: str, save_metrics: bool = True):
-    prompt = load_prompt()
+    prompt = load_prompt(PROMPT_FILE)
     result = call_model(client, prompt, question)
 
     timestamp = f"{datetime.now().isoformat()}"
@@ -184,7 +134,7 @@ def run_query(client: openai.OpenAI, question: str, save_metrics: bool = True):
         "model_output": result.get("model_output")
     }
     if save_metrics:
-        append_metrics(metrics_entry)
+        append_metrics(metrics_entry, METRICS_FILE)
 
     # Output contract JSON
     # If parse ok and is safe , print parsed json. Otherwise return a fallback structured JSON explaining parse failed
