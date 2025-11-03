@@ -51,7 +51,7 @@ def check_moderation(text: str):
         return {'allowed': False, 'category': f'error: {e}', 'confidence': 0}
 
 
-# ----------------------- PII detectors & helpers used based on @subhodeepds code -----------------------
+# ----------------------- PII detectors & helpers used based on @subhodeepds(Subhodeep Das) code -----------------------
 EMAIL = re.compile(r"\b[\w\.-]+@[\w\.-]+\.\w{2,}\b")
 IPV4  = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 # CARD first, then PHONE, so phones don't consume card digits
