@@ -1,5 +1,6 @@
-"""Simple moderation helper that uses OpenAI moderation endpoint.
-The file shows how to call moderation and map to a safe fallback.
+"""
+Simple moderation helper that uses OpenAI moderation endpoint.
+The file contains the functions to check if the text is safe or not and to redact Personal Identifiable Information (PII) from the text.
 """
 import os
 import openai
@@ -96,7 +97,7 @@ def luhn_ok(s: str) -> bool:
 
 def redact_pii(text: str) -> str:
     """
-    Redact Personal Identificable information
+    Redact Personal Identifiable Information (PII) from the text.
     """
     # Order: card → email/phone/ip
     def _card_sub(m):
