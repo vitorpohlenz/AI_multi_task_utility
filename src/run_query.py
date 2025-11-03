@@ -121,21 +121,6 @@ def run_query(client: openai.OpenAI, question: str, save_metrics: bool = True):
     result = call_model(client, prompt, question)
 
     timestamp = f"{datetime.now().isoformat()}"
-    metrics_entry = {
-        "timestamp": timestamp,
-        "model": MODEL,
-        "moderation_result":result.get("moderation_result"),
-        "tokens_prompt": int(result.get("usage").get("prompt_tokens")),
-        "tokens_completion": int(result.get("usage").get("completion_tokens")),
-        "total_tokens": int(result.get("usage").get("total_tokens")),
-        "latency_ms": int(result.get("latency_ms")),
-        "estimated_cost_usd": float(result.get("estimated_cost_usd")),
-        "ok_parse": bool(result.get("parsed").get("ok")),
-        "user_prompt":result.get("user_prompt"),
-        "model_output": result.get("model_output")
-    }
-    if save_metrics:
-        append_metrics(metrics_entry, METRICS_FILE)
 
     # Output contract JSON
     # If parse ok and is safe , print parsed json. Otherwise return a fallback structured JSON explaining parse failed
@@ -156,6 +141,22 @@ def run_query(client: openai.OpenAI, question: str, save_metrics: bool = True):
             "actions": ["ask user to rephrase", "escalate parsing error"],
             "metadata": {"notes": "parse_error", "model_output": result["model_output"]},
         }
+    
+    metrics_entry = {
+        "timestamp": timestamp,
+        "model": MODEL,
+        "moderation_result":result.get("moderation_result"),
+        "tokens_prompt": int(result.get("usage").get("prompt_tokens")),
+        "tokens_completion": int(result.get("usage").get("completion_tokens")),
+        "total_tokens": int(result.get("usage").get("total_tokens")),
+        "latency_ms": int(result.get("latency_ms")),
+        "estimated_cost_usd": float(result.get("estimated_cost_usd")),
+        "ok_parse": bool(result.get("parsed").get("ok")),
+        "user_prompt":result.get("user_prompt"),
+        "output": out
+    }
+    if save_metrics:
+        append_metrics(metrics_entry, METRICS_FILE)
 
     # Print canonical JSON to stdout
     print(json.dumps(out, ensure_ascii=False))

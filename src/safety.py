@@ -34,8 +34,9 @@ def check_moderation(text: str):
         # Does not work because the moderation model is not available in OpenRouter.
         # resp = client.moderations.create(model="openai/omni-moderation-latest", input=text)
         # Using a Free model from OpenReueter.
+        moderation_model = "openai/gpt-oss-20b:free"
         resp = client.chat.completions.create(
-            model="openai/gpt-oss-20b:free",
+            model=moderation_model,
             messages=moderation_messages,
             temperature=0,
             response_format={"type": "json_object"},
@@ -43,12 +44,14 @@ def check_moderation(text: str):
         )
         moderated = resp.choices[0].message.content.strip()
         moderated_data = json.loads(moderated)
+        moderated_data['moderation_model'] = moderation_model
+        moderated_data['moderation_response'] = moderated
         return moderated_data
         
     except Exception as e:
         print(f"Error checking moderation: {e}")
         # Block the user if the moderation fails.
-        return {'allowed': False, 'category': f'error: {e}', 'confidence': 0}
+        return {'allowed': False, 'category': f'error: {e}', 'confidence': 0, 'moderation_model' : moderation_model}
 
 
 # ----------------------- PII detectors & helpers used based on @subhodeepds(Subhodeep Das) code -----------------------
